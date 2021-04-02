@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-var ErrExpiredToken error = errors.New("Token has expired")
-var ErrInvalidToken error = errors.New("Invalid token")
+var ErrExpiredToken = errors.New("Token has expired")
+var ErrInvalidToken = errors.New("Invalid token")
 
 type Payload struct {
 	ID        uuid.UUID `json:"id"`

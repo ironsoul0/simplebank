@@ -5,20 +5,33 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	db "github.com/ironsoul0/simplebank/db/sqlc"
+	"github.com/ironsoul0/simplebank/token"
+	"github.com/ironsoul0/simplebank/util"
 )
 
 type Server struct {
-	store  *db.SQLStore
-	router *gin.Engine
+	config     util.Config
+	store      *db.SQLStore
+	tokenMaker token.Maker
+	router     *gin.Engine
 }
 
-func NewServer(store *db.SQLStore) *Server {
-	router := gin.Default()
-	server := &Server{store: store, router: router}
+func NewServer(config util.Config, store *db.SQLStore) *Server {
+	tokenMaker, _ := token.NewJWTMaker(config.TokenSymmetricKey)
+
+	server := &Server{config: config, store: store, tokenMaker: tokenMaker}
+
+	server.setupRouter()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
+
+	return server
+}
+
+func (server *Server) setupRouter() {
+	router := gin.Default()
 
 	router.POST("/accounts", server.createAccount)
 	router.GET("/accounts/:id", server.getAccount)
@@ -26,8 +39,9 @@ func NewServer(store *db.SQLStore) *Server {
 	router.POST("/transfers", server.createTransfer)
 
 	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
 
-	return server
+	server.router = router
 }
 
 func (server *Server) Start(address string) error {
